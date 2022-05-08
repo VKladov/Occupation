@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
-using DefaultNamespace;
 using UnityEngine;
 using Zenject;
 
-public class SpawnPerson : MonoBehaviour
+public class SpawnPerson : ITickable
 {
 	public event Action<Person> PersonDied;
 	
-	[SerializeField] private Person _personPrefab;
 	[Inject] private ClickPicker _clickPicker;
+	[Inject] private Person.Factory _factory;
 	
 	public List<Person> People = new List<Person>();
 
-	private void Update()
+	public void Tick()
 	{
 		if (Input.GetKeyDown(KeyCode.Q))
 		{
@@ -27,7 +26,8 @@ public class SpawnPerson : MonoBehaviour
 
 	private void Spawn(int teamID)
 	{
-		var person = Instantiate(_personPrefab, _clickPicker.CheckClick().GroundPoint, Quaternion.identity);
+		var person = _factory.Create();
+		person.transform.position = _clickPicker.CheckClick().GroundPoint;
 		person.SetTeam(teamID);
 		person.Died += PersonOnDied;
 		People.Add(person);

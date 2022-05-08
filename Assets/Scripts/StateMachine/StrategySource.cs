@@ -38,7 +38,7 @@ public static class StrategySource
 			{
 				OnHealStateChanged = isHealing =>
 				{
-					if (!isHealing && owner.Health.NormalizedValue < 1f)
+					if (!isHealing && owner.Health.NormalizedValue < 1f && owner.Hospital != null)
 					{
 						owner.StateMachine.ChangeStrategy(goToHospital(owner.Hospital.transform.position));
 					}
@@ -65,7 +65,7 @@ public static class StrategySource
 			{
 				OnEnterBuilding = building =>
 				{
-					if (building is Hospital)
+					if (building is Hospital && owner.RestPoint != null)
 					{
 						owner.SetMovementState(PersonMovementState.Stand);
 						owner.Health.TakeHeal();
@@ -94,7 +94,7 @@ public static class StrategySource
 				},
 				OnTakeShot = person =>
 				{
-					if (owner.Health.NormalizedValue < 0.5f)
+					if (owner.Health.NormalizedValue < 0.5f && owner.Hospital != null)
 					{
 						owner.SetMovementState(PersonMovementState.Crouch);
 						owner.StateMachine.ChangeStrategy(goToHospital(owner.Hospital.transform.position));

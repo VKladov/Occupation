@@ -1,33 +1,29 @@
 using System;
 using UnityEngine;
 using UnityEngine.AI;
+using Zenject;
 
-[RequireComponent(typeof(NavMeshAgent))]
-public class PersonMovement : MonoBehaviour
+public class PersonMovement : IInitializable, IDisposable
 {
+	[Inject]
 	private NavMeshAgent _navMeshAgent;
 
 	public Vector3 NavAgentVelocity => _navMeshAgent.velocity;
+
+	public void Initialize()
+	{
+		_navMeshAgent.enabled = true;
+	}
+
+	public void Dispose()
+	{
+		_navMeshAgent.enabled = false;
+	}
 
 	public float MaxSpeed
 	{
 		set => _navMeshAgent.speed = value;
 		get => _navMeshAgent.speed;
-	}
-
-	private void Awake()
-	{
-		_navMeshAgent = GetComponent<NavMeshAgent>();
-	}
-
-	private void OnEnable()
-	{
-		_navMeshAgent.enabled = true;
-	}
-
-	private void OnDisable()
-	{
-		_navMeshAgent.enabled = false;
 	}
 
 	public void MoveTo(Vector3 position)

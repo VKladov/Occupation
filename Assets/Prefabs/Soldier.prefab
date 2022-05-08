@@ -23623,8 +23623,9 @@ GameObject:
   - component: {fileID: 8412099774494504739}
   - component: {fileID: 8412099774494504740}
   - component: {fileID: 8412099774494504741}
-  - component: {fileID: 8412099774494504738}
   - component: {fileID: 8412099774494504737}
+  - component: {fileID: 8375639678129684957}
+  - component: {fileID: 3923847090305363686}
   m_Layer: 6
   m_Name: Soldier
   m_TagString: Untagged
@@ -23713,12 +23714,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b23846302dd4aafbd4fc1e21e279d0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _hungerSpeed: 0
-  _hungerDamageSpeed: 0
-  _house: {fileID: 0}
-  _obstaclesLayer:
-    serializedVersion: 2
-    m_Bits: 512
   _bloodEffect: {fileID: 6226561343416128402}
   Gun: {fileID: 0}
 --- !u!65 &8412099774494504740
@@ -23741,7 +23736,7 @@ NavMeshAgent:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8412099774494504744}
-  m_Enabled: 1
+  m_Enabled: 0
   m_AgentTypeID: 0
   m_Radius: 1
   m_Speed: 5
@@ -23756,18 +23751,6 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &8412099774494504738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8412099774494504744}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6497c986b68f42cab7b098500b9f2e9b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &8412099774494504737
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23839,6 +23822,36 @@ MonoBehaviour:
   - TeamId: 0
     Parts:
     - {fileID: 8412099774339468981}
+--- !u!114 &8375639678129684957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8412099774494504744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08eca9f7688a0a24685b89133b020c8e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _scriptableObjectInstallers: []
+  _monoInstallers:
+  - {fileID: 3923847090305363686}
+  _installerPrefabs: []
+  _autoRun: 1
+  _kernel: {fileID: 0}
+--- !u!114 &3923847090305363686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8412099774494504744}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5619d62266b43eeb942637de2f3b686, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8412099774500894170
 GameObject:
   m_ObjectHideFlags: 0

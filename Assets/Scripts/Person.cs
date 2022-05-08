@@ -2,38 +2,40 @@ using System;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using Random = UnityEngine.Random;
+using Zenject;
 
-[RequireComponent(typeof(PersonMovement))]
 [RequireComponent(typeof(PersonGenerator))]
-[RequireComponent(typeof(Animator))]
 public class Person : MonoBehaviour
 {
+	public class Factory : PlaceholderFactory<Person>
+	{
+		
+	}
+	
 	public event Action<Person> Died;
 	public event Action<Person> TookShot;
 	public event Action<Building> EnteredBuilding;
 
-	[SerializeField] private float _hungerSpeed;
-	[SerializeField] private float _hungerDamageSpeed;
-	[SerializeField] private Building _house;
-	[SerializeField] private LayerMask _obstaclesLayer;
 	[SerializeField] private ParticleSystem _bloodEffect;
 
 	public string Name { get; private set; }
 	public int TeamID { get; private set; }
-	public PersonMovement Movement { get; private set; }
-	public Animator Animator { get; private set; }
 	public PersonStateMachine StateMachine { get; private set; }
-	public PersonSenses Senses { get; private set; }
+
+	[Inject] public readonly Animator Animator;
+	[Inject] public readonly PersonMovement Movement;
+	[Inject] public readonly PersonSenses Senses;
+	[Inject] public readonly PersonHealth Health;
+	[Inject] public readonly Gun Gun;
+	
 	public Vector3 MiddlePoint => transform.position + Vector3.up;
 
-	public PersonHealth Health  { get; private set; }
 	public readonly PersonStats Stats = new PersonStats();
 	public readonly Storage Bag = new Storage();
 
 	public bool IsAlive => Health.NormalizedValue > 0f;
 	public Person[] AllOtherPeople => FindObjectsOfType<Person>().Where(item => item.transform.root != transform.root).ToArray();
-	public Gun Gun;
+	
 
 	private PersonGenerator _personGenerator;
 	private Outline[] _outlines;
@@ -42,8 +44,6 @@ public class Person : MonoBehaviour
 	public PersonMovementState MovementState { get; private set; }
 	public Hospital Hospital => FindObjectOfType<Hospital>();
 	public RestPoint RestPoint => FindObjectOfType<RestPoint>();
-
-	private PersonState _task;
 
 	public void HandleBuildingEnter(Building building)
 	{
@@ -127,28 +127,18 @@ public class Person : MonoBehaviour
 
 	private void Awake()
 	{
-		Movement = GetComponent<PersonMovement>();
-		Animator = GetComponent<Animator>();
 		_personGenerator = GetComponent<PersonGenerator>();
 		Name = NameGenerator.GenerateUniqName();
-		Health = new PersonHealth();
 	}
 
 	private void OnEnable()
 	{
 		Health.Changed += HealthChanged;
-		Health.StateChanged += HealthStateChanged;
 	}
 
 	private void OnDisable()
 	{
 		Health.Changed -= HealthChanged;
-		Health.StateChanged -= HealthStateChanged;
-	}
-
-	private void HealthStateChanged()
-	{
-		
 	}
 
 	private void HealthChanged()
@@ -159,15 +149,13 @@ public class Person : MonoBehaviour
 		}
 
 		StateMachine.SwitchToState(new DeathState());
-		Movement.enabled = false;
+		Movement.Dispose();
 		Died?.Invoke(this);
 		enabled = false;
 	}
 
 	private void Start()
 	{
-		Senses = new PersonSenses(this, _obstaclesLayer);
-		Gun = GetComponentsInChildren<Gun>().FirstOrDefault(item => item.isActiveAndEnabled);
 		SetMainObjective(transform.position);
 		StateMachine = new PersonStateMachine(this, TeamID == 0 ?
 				StrategySource.GetDefenceStrategy(this) :
@@ -179,9 +167,14 @@ public class Person : MonoBehaviour
 	{
 		Health.Update(Time.deltaTime);
 		StateMachine?.Update();
+
+		var velocityScale = Movement.NavAgentVelocity.magnitude / Movement.MaxSpeed;
+		var velocityDirection = Movement.NavAgentVelocity.normalized;
+		var directionX = Vector3.Dot(transform.right, velocityDirection) * velocityScale;
+		var directionY = Vector3.Dot(transform.forward, velocityDirection) * velocityScale;
 		
-		Animator.SetFloat("DirectionX", Vector3.Dot(transform.right, Movement.NavAgentVelocity));
-		Animator.SetFloat("DirectionY", Vector3.Dot(transform.forward, Movement.NavAgentVelocity));
+		Animator.SetFloat("DirectionX", directionX);
+		Animator.SetFloat("DirectionY", directionY);
 	}
 
 	public async UniTask RotateTo(Transform target, float duration = 0.5f)

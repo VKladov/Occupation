@@ -23,7 +23,7 @@ public class ShotPerson : PersonState
 		{
 			if (Owner.Gun.NeedReload())
 			{
-				Owner.Animator.SetTrigger("InfantryReload");
+				Owner.Animator.SetTrigger("Reload");
 				await Delay(Random.Range(3.5f, 4f));
 				Owner.Gun.Reload();
 			}
@@ -45,7 +45,7 @@ public class ShotPerson : PersonState
 			var shotPoint = Owner.transform.position + direction * delta.magnitude + Vector3.up * 1.6f;
 
 			Owner.Gun.TryShoot(shotPoint);
-			Owner.Animator.SetTrigger("InfantryShot");
+			Owner.Animator.SetTrigger("Shot");
 			GlobalSounds.Sound?.Invoke(Owner);
 			if (willHit)
 			{

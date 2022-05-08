@@ -4,16 +4,30 @@ using Zenject;
 
 public class MainInstaller : MonoInstaller
 {
-    [SerializeField] private GameObject _controlsPrefab;
-    [SerializeField] private GameObject _personSpawnerPrefab;
+    [Header("Layers")]
+    [SerializeField] private LayerMask _personLayerMask;
+    [SerializeField] private LayerMask _groundLayerMask;
+    [SerializeField] private LayerMask _buildingLayerMask;
+    [SerializeField] private LayerMask _obstaclesLayerMask;
+    
+    [Header("Person")]
+    [SerializeField] private Person _personPrefab;
     public override void InstallBindings()
     {
-        Container.Bind<ClickPicker>().FromComponentInNewPrefab(_controlsPrefab).AsSingle();
-        Container.Bind<SpawnPerson>().FromComponentInNewPrefab(_personSpawnerPrefab).AsSingle().NonLazy();
+        // LayerMasks
+        Container.Bind<LayerMask>().WithId(StringConstants.PersonLayer).FromInstance(_personLayerMask).CopyIntoAllSubContainers();
+        Container.Bind<LayerMask>().WithId(StringConstants.GroundLayer).FromInstance(_groundLayerMask).CopyIntoAllSubContainers();
+        Container.Bind<LayerMask>().WithId(StringConstants.BuildingLayer).FromInstance(_buildingLayerMask).CopyIntoAllSubContainers();
+        Container.Bind<LayerMask>().WithId(StringConstants.ObstaclesLayer).FromInstance(_obstaclesLayerMask).CopyIntoAllSubContainers();
+
+        Container.Bind<Camera>().FromComponentInHierarchy().AsSingle();
+        Container.BindInterfacesAndSelfTo<ClickPicker>().AsSingle();
+        Container.BindInterfacesAndSelfTo<SpawnPerson>().AsSingle();
         Container.Bind<Canvas>().FromComponentInHierarchy().AsSingle();
         Container.Bind<RectSelectionView>().FromComponentInHierarchy().AsSingle();
-        Container.Bind<SendPersonToPoint>().FromNew().AsSingle().NonLazy();
-        Container.Bind<PersonSelection>().FromNewComponentOnNewGameObject().AsSingle().NonLazy();
-        Container.Bind<SelectedPersonHighlight>().FromNew().AsSingle().NonLazy();
+        Container.Bind<SendPersonToPoint>().AsSingle().NonLazy();
+        Container.BindInterfacesAndSelfTo<PersonSelection>().AsSingle();
+        Container.Bind<SelectedPersonHighlight>().AsSingle().NonLazy();
+        Container.BindFactory<Person, Person.Factory>().FromSubContainerResolve().ByNewContextPrefab(_personPrefab);
     }
 }

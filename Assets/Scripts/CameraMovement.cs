@@ -9,7 +9,6 @@ using Zenject;
 [RequireComponent(typeof(CinemachineFreeLook))]
 public class CameraMovement : MonoBehaviour
 {
-    [SerializeField] private float _speed;
     [Inject] private ClickPicker _clickPicker;
     
     private CinemachineFreeLook _cinemachine;

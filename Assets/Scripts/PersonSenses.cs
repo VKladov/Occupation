@@ -1,19 +1,26 @@
 using System;
 using UnityEngine;
+using Zenject;
 
-public class PersonSenses : IDisposable
+public class PersonSenses : IDisposable, IInitializable
 {
 	public event Action<Person> ReceivedSound;
 	
+	[Inject]
 	private readonly Person _owner;
-	private readonly LayerMask _wallsLayerMask;
-	private const float FieldOfView = 100f;
 	
-	public PersonSenses(Person owner, LayerMask wallsLayerMask)
+	[Inject(Id = StringConstants.ObstaclesLayer)]
+	private LayerMask _wallsLayerMask;
+	
+	private const float FieldOfView = 100f;
+	public void Initialize()
 	{
-		_owner = owner;
-		_wallsLayerMask = wallsLayerMask;
 		GlobalSounds.Sound += OnSound; 
+	}
+
+	public void Dispose()
+	{
+		GlobalSounds.Sound -= OnSound; 
 	}
 
 	private void OnSound(Person source)
@@ -35,10 +42,5 @@ public class PersonSenses : IDisposable
 		}
 
 		return !Physics.Linecast(_owner.transform.position + Vector3.up, point + Vector3.up, _wallsLayerMask);
-	}
-
-	public void Dispose()
-	{
-		GlobalSounds.Sound -= OnSound; 
 	}
 }

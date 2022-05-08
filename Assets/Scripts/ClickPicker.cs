@@ -2,8 +2,9 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.PlayerLoop;
+using Zenject;
 
-public class ClickPicker : MonoBehaviour
+public class ClickPicker : ITickable
 {
 	public class ClickResult
 	{
@@ -21,21 +22,52 @@ public class ClickPicker : MonoBehaviour
 	public event Action<Vector2> RightDragChanged;
 	public event Action<Vector2> RightDragEnded;
 
-	[SerializeField] private LayerMask _personLayer;
-	[SerializeField] private LayerMask _groundLayer;
-	[SerializeField] private LayerMask _buildingLayer;
+	[Inject(Id = StringConstants.PersonLayer)] 
+	private LayerMask _personLayer;
+	
+	[Inject(Id = StringConstants.GroundLayer)] 
+	private LayerMask _groundLayer;
+	
+	[Inject(Id = StringConstants.BuildingLayer)] 
+	private LayerMask _buildingLayer;
 
+	[Inject]
 	private Camera _camera;
+	
 	private Vector2 _clickStartPosition;
 	private bool _inLeftDrag;
 	private bool _inRightDrag;
 
-	private void Awake()
+	public ClickResult CheckClick()
 	{
-		_camera = Camera.main;
+		var ray = _camera.ScreenPointToRay(Input.mousePosition);
+		Person person = null;
+		if (Physics.Raycast(ray, out var hitInfo, 1000f, _personLayer))
+		{
+			hitInfo.collider.TryGetComponent(out person);
+		}
+
+		Building building = null;
+		if (Physics.Raycast(ray, out var buildingHit, 1000f, _buildingLayer))
+		{
+			buildingHit.collider.TryGetComponent(out building);
+		}
+
+		var groundPoint = Vector3.zero;
+		if (Physics.Raycast(ray, out var groundHit, 1000f, _groundLayer))
+		{
+			groundPoint = groundHit.point;
+		}
+				
+		return new ClickResult
+		{
+			Building = building,
+			Person = person,
+			GroundPoint = groundPoint
+		};
 	}
 
-	private void Update()
+	public void Tick()
 	{
 		if (Input.GetMouseButtonDown(0))
 		{
@@ -95,34 +127,5 @@ public class ClickPicker : MonoBehaviour
 			}
 			_inRightDrag = false;
 		}
-	}
-
-	public ClickResult CheckClick()
-	{
-		var ray = _camera.ScreenPointToRay(Input.mousePosition);
-		Person person = null;
-		if (Physics.Raycast(ray, out var hitInfo, 1000f, _personLayer))
-		{
-			hitInfo.collider.TryGetComponent(out person);
-		}
-
-		Building building = null;
-		if (Physics.Raycast(ray, out var buildingHit, 1000f, _buildingLayer))
-		{
-			buildingHit.collider.TryGetComponent(out building);
-		}
-
-		var groundPoint = Vector3.zero;
-		if (Physics.Raycast(ray, out var groundHit, 1000f, _groundLayer))
-		{
-			groundPoint = groundHit.point;
-		}
-				
-		return new ClickResult
-		{
-			Building = building,
-			Person = person,
-			GroundPoint = groundPoint
-		};
 	}
 }

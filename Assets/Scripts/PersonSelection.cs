@@ -5,7 +5,7 @@ using DefaultNamespace;
 using UnityEngine;
 using Zenject;
 
-public class PersonSelection : MonoBehaviour
+public class PersonSelection : ITickable, IInitializable, IDisposable
 {
 	public event Action<List<Person>> Changed;
 	
@@ -14,16 +14,31 @@ public class PersonSelection : MonoBehaviour
 	[Inject] private SpawnPerson _spawnPerson;
 	[Inject] private RectSelectionView _rectSelection;
 	[Inject] private ClickPicker _clickPicker;
-
+	[Inject] private Camera _camera;
+	
 	private Vector2 _rectSelectionStartPoint;
-	private Camera _camera;
-
-	private void Awake()
+	
+	public void Initialize()
 	{
-		_camera = Camera.main;
+		_clickPicker.ClickedLeft += ClickPickerOnClickedLeft;
+		_clickPicker.ClickedRight += ClickPickerOnClickedRight;
+		_clickPicker.LeftDragStarted += ClickPickerOnLeftDragStarted;
+		_clickPicker.LeftDragChanged += ClickPickerOnLeftDragChanged;
+		_clickPicker.LeftDragEnded += ClickPickerOnLeftDragEnded;
+		_spawnPerson.PersonDied += SpawnPersonOnPersonDied;
 	}
 
-	private void Update()
+	public void Dispose()
+	{
+		_clickPicker.ClickedLeft -= ClickPickerOnClickedLeft;
+		_clickPicker.ClickedRight -= ClickPickerOnClickedRight;
+		_clickPicker.LeftDragStarted -= ClickPickerOnLeftDragStarted;
+		_clickPicker.LeftDragChanged -= ClickPickerOnLeftDragChanged;
+		_clickPicker.LeftDragEnded -= ClickPickerOnLeftDragEnded;
+		_spawnPerson.PersonDied -= SpawnPersonOnPersonDied;
+	}
+
+	public void Tick()
 	{
 		if (Input.GetKeyDown(KeyCode.Alpha1))
 		{
@@ -48,26 +63,6 @@ public class PersonSelection : MonoBehaviour
 				person.SetMovementState(PersonMovementState.Stand);
 			}
 		}
-	}
-
-	private void OnEnable()
-	{
-		_clickPicker.ClickedLeft += ClickPickerOnClickedLeft;
-		_clickPicker.ClickedRight += ClickPickerOnClickedRight;
-		_clickPicker.LeftDragStarted += ClickPickerOnLeftDragStarted;
-		_clickPicker.LeftDragChanged += ClickPickerOnLeftDragChanged;
-		_clickPicker.LeftDragEnded += ClickPickerOnLeftDragEnded;
-		_spawnPerson.PersonDied += SpawnPersonOnPersonDied;
-	}
-
-	private void OnDisable()
-	{
-		_clickPicker.ClickedLeft -= ClickPickerOnClickedLeft;
-		_clickPicker.ClickedRight -= ClickPickerOnClickedRight;
-		_clickPicker.LeftDragStarted -= ClickPickerOnLeftDragStarted;
-		_clickPicker.LeftDragChanged -= ClickPickerOnLeftDragChanged;
-		_clickPicker.LeftDragEnded -= ClickPickerOnLeftDragEnded;
-		_spawnPerson.PersonDied -= SpawnPersonOnPersonDied;
 	}
 
 	private void SpawnPersonOnPersonDied(Person person)

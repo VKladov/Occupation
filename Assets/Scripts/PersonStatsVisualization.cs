@@ -56,7 +56,7 @@ public class PersonStatsVisualization : MonoBehaviour
 			person.Stats.BellyFull
 		});
 		_storageView.enabled = true;
-		_storageView.SetStorage(person.Bag);
+		_storageView.SetStorage(person.Storage);
 	}
 
 	private void PickerOnBuildingSelected(Building building)

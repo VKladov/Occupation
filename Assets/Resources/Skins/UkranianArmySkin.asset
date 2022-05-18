@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88cf59805b24442db4fd1bb0260e6b0a, type: 3}
+  m_Name: UkranianArmySkin
+  m_EditorClassIdentifier: 
+  _skinPrefab: {fileID: 2774723147575754449, guid: 0c724da61d0da4f47899274f19c768db, type: 3}
+  _rifle: {fileID: 8865641069238565316, guid: dbd143e0650914972b5e6dab09990cea, type: 3}
+  _handgun: {fileID: 8865641069238565316, guid: 3a162f520a166451fb0d95f010ef7b0a, type: 3}

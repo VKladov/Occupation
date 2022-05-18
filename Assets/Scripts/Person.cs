@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
+using ModestTree;
 using UnityEngine;
 using Zenject;
 
-[RequireComponent(typeof(PersonGenerator))]
 public class Person : MonoBehaviour
 {
 	public class Factory : PlaceholderFactory<Person>
@@ -16,28 +18,29 @@ public class Person : MonoBehaviour
 	public event Action<Person> TookShot;
 	public event Action<Building> EnteredBuilding;
 
-	[SerializeField] private ParticleSystem _bloodEffect;
-
 	public string Name { get; private set; }
-	public int TeamID { get; private set; }
+	public TeamSkinPreset Team { get; private set; }
 	public PersonStateMachine StateMachine { get; private set; }
+	public Gun Gun { get; private set; }
 
 	[Inject] public readonly Animator Animator;
 	[Inject] public readonly PersonMovement Movement;
 	[Inject] public readonly PersonSenses Senses;
 	[Inject] public readonly PersonHealth Health;
-	[Inject] public readonly Gun Gun;
+	[Inject] public readonly Storage Storage;
+	[Inject] public readonly SkinGenerator SkinGenerator;
+	[Inject] private VisualEffects _visualEffects;
+	[Inject] private readonly List<WeaponSlot> _weaponSlots;
+	[Inject] private readonly Gun.Factory _gunFactory;
+	[SerializeField] private Transform _weaponContainer;
 	
 	public Vector3 MiddlePoint => transform.position + Vector3.up;
 
 	public readonly PersonStats Stats = new PersonStats();
-	public readonly Storage Bag = new Storage();
 
 	public bool IsAlive => Health.NormalizedValue > 0f;
 	public Person[] AllOtherPeople => FindObjectsOfType<Person>().Where(item => item.transform.root != transform.root).ToArray();
 	
-
-	private PersonGenerator _personGenerator;
 	private Outline[] _outlines;
 	public Vector3 MainTarget { get; private set; }
 	public bool HasMainTarget { get; set; }
@@ -68,17 +71,16 @@ public class Person : MonoBehaviour
 		Movement.MaxSpeed = state.MaxMovementSpeed;
 	}
 
-	public void TakeShot(Person attacker)
+	public void TakeShot(Person attacker, float damage)
 	{
 		if (!IsAlive)
 		{
 			return;
 		}
 		
-		_bloodEffect.transform.rotation = Quaternion.LookRotation(transform.position - attacker.transform.position);
-		_bloodEffect.Play();
+		_visualEffects.BloodShot(MiddlePoint, transform.position - attacker.transform.position);
 		Animator.SetTrigger(MovementState.AnimatorPrefix + "_Infantry_Damage");
-		Health.Change(-10);
+		Health.Change(-damage);
 		TookShot?.Invoke(attacker);
 	}
 
@@ -109,17 +111,15 @@ public class Person : MonoBehaviour
 		return occuracy * opponentDodge * distanceScale * obstacleChances;
 	}
 
-	public void SetTeam(int teamID)
+	public void SetTeam(TeamSkinPreset teamID)
 	{
-		TeamID = teamID;
-		_personGenerator.GenerateForTeam(teamID);
-		_outlines = GetComponentsInChildren<Outline>();
+		Team = teamID;
 		SetSelection(false);
 	}
 
 	public void SetSelection(bool active)
 	{
-		foreach (var outline in _outlines)
+		foreach (var outline in GetComponentsInChildren<Outline>())
 		{
 			outline.enabled = active;
 		}
@@ -127,7 +127,6 @@ public class Person : MonoBehaviour
 
 	private void Awake()
 	{
-		_personGenerator = GetComponent<PersonGenerator>();
 		Name = NameGenerator.GenerateUniqName();
 	}
 
@@ -149,6 +148,8 @@ public class Person : MonoBehaviour
 		}
 
 		StateMachine.SwitchToState(new DeathState());
+		StateMachine.Dispose();
+		StateMachine = null;
 		Movement.Dispose();
 		Died?.Invoke(this);
 		enabled = false;
@@ -156,10 +157,9 @@ public class Person : MonoBehaviour
 
 	private void Start()
 	{
+		Movement.Enable();
 		SetMainObjective(transform.position);
-		StateMachine = new PersonStateMachine(this, TeamID == 0 ?
-				StrategySource.GetDefenceStrategy(this) :
-				StrategySource.GetAttackStrategy(this));
+		StateMachine = new PersonStateMachine(this, new BasicShotStrategy(this, MainTarget));
 		SetMovementState(PersonMovementState.Stand);
 	}
 
@@ -169,7 +169,7 @@ public class Person : MonoBehaviour
 		StateMachine?.Update();
 
 		var velocityScale = Movement.NavAgentVelocity.magnitude / Movement.MaxSpeed;
-		var velocityDirection = Movement.NavAgentVelocity.normalized;
+		var velocityDirection = Movement.NavAgentVelocity;
 		var directionX = Vector3.Dot(transform.right, velocityDirection) * velocityScale;
 		var directionY = Vector3.Dot(transform.forward, velocityDirection) * velocityScale;
 		
@@ -192,18 +192,55 @@ public class Person : MonoBehaviour
 		transform.rotation = Quaternion.LookRotation(target.transform.position - transform.position);
 	}
 
-	public async UniTask RotateTo(Vector3 targetDirection, float duration = 0.5f)
+	public void AddWeapon(Gun weapon)
 	{
-		var rotation = transform.rotation;
-		var targetRotation = Quaternion.LookRotation(targetDirection);
-		var time = 0f;
-		while (time < duration)
+		var slot = _weaponSlots.FirstOrDefault(slot => slot.Type == weapon.Type);
+		if (slot == null)
 		{
-			transform.rotation = Quaternion.Lerp(rotation, targetRotation, time / duration);
-			await UniTask.WaitForEndOfFrame(this);
-			time += Time.deltaTime;
+			throw new Exception("Can't find slot for type " + weapon.Type);
 		}
+		slot.Put(_gunFactory.Create(weapon.gameObject));
+	}
+
+	public async UniTask<bool> TakeWeapon()
+	{
+		var fullSlots = _weaponSlots.Where(slot => slot.IsEmpty == false).OrderBy(slot =>
+		{
+			switch (slot.Type)
+			{
+				case WeaponType.Handgun:
+					return 2;
+				case WeaponType.Rifle:
+					return 1;
+			}
+
+			return 0;
+		});
+
+		if (fullSlots.IsEmpty())
+		{
+			return false;
+		}
+
+		Gun = fullSlots.First().Take();
+		Gun.transform.SetParent(_weaponContainer);
+		Gun.transform.localPosition = Vector3.zero;
+		Gun.transform.localRotation = Quaternion.identity;
+		Animator.SetTrigger("SwitchTo" + Gun.Type);
+		await Task.Delay(500);
+		return true;
+	}
+
+	public async Task PutWeaponBack()
+	{
+		if (Gun == null)
+		{
+			return;
+		}
+		Animator.SetTrigger("SwitchToEmpty");
+		await Task.Delay(600);
 		
-		transform.rotation = targetRotation;
+		_weaponSlots.FirstOrDefault(slot => slot.Type == Gun.Type)?.Put(Gun);
+		Gun = null;
 	}
 }

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class PersonStateMachine
+public class PersonStateMachine : IDisposable
 {
 	private PersonStrategy _strategy;
 	private PersonState _state;
@@ -35,7 +35,6 @@ public class PersonStateMachine
 		_state?.Stop();
 		_state = nextState;
 		_state.Enter(_person, OnStateComplete);
-		_strategy?.Pause();
 	}
 
 	public void SetObjective(Vector3 objective)
@@ -53,6 +52,11 @@ public class PersonStateMachine
 	private void OnStateComplete()
 	{
 		_state = null;
-		_strategy?.Resume();
+	}
+
+	public void Dispose()
+	{
+		_state?.Stop();
+		_strategy?.Dispose();
 	}
 }

@@ -9,7 +9,7 @@ public class PersonSenses : IDisposable, IInitializable
 	[Inject]
 	private readonly Person _owner;
 	
-	[Inject(Id = StringConstants.ObstaclesLayer)]
+	[Inject(Id = ID.ObstaclesLayer)]
 	private LayerMask _wallsLayerMask;
 	
 	private const float FieldOfView = 100f;

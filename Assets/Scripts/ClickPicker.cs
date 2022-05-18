@@ -22,13 +22,13 @@ public class ClickPicker : ITickable
 	public event Action<Vector2> RightDragChanged;
 	public event Action<Vector2> RightDragEnded;
 
-	[Inject(Id = StringConstants.PersonLayer)] 
+	[Inject(Id = ID.PersonLayer)] 
 	private LayerMask _personLayer;
 	
-	[Inject(Id = StringConstants.GroundLayer)] 
+	[Inject(Id = ID.GroundLayer)] 
 	private LayerMask _groundLayer;
 	
-	[Inject(Id = StringConstants.BuildingLayer)] 
+	[Inject(Id = ID.BuildingLayer)] 
 	private LayerMask _buildingLayer;
 
 	[Inject]

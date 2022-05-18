@@ -2,144 +2,110 @@ using System;
 using System.Linq;
 using UnityEngine;
 
-public class PersonStrategy : IDisposable
+public abstract class PersonStrategy : IDisposable
 {
-	public class StrategyEvents
-	{
-		public Action OnSeeTargetPoint;
-		public Action OnReachTargetPoint;
-		public Action<Person> OnSeeEnemy;
-		public Action<Person> OnTakeShot;
-		public Action<Person> OnHearShot;
-		public Action<Building> OnEnterBuilding;
-		public Action<bool> OnHealStateChanged;
-	}
-	
-	private Person _owner;
-	private Vector3 _targetPoint;
-	private StrategyEvents _events;
-	public bool IsEnable { get; private set; } = true;
+	protected Person Owner;
+	protected Vector3 TargetPoint;
 
-	public PersonStrategy(
-		Person owner,
-		Vector3 targetPoint,
-		StrategyEvents events)
+	protected PersonStrategy(Person owner, Vector3 targetPoint)
 	{
-		_owner = owner;
-		_targetPoint = targetPoint;
-		_events = events;
-		
+		Owner = owner;
+		TargetPoint = targetPoint;
+
 		Subscribe();
-		
-		_owner.Movement.MoveTo(targetPoint);
+		Owner.Movement.MoveTo(targetPoint);
 	}
 
 	public void SetTargetPoint(Vector3 point)
 	{
-		_targetPoint = point;
-		_owner.Movement.MoveTo(point);
+		TargetPoint = point;
+		Owner.Movement.MoveTo(point);
 	}
 
-	public void Pause()
+	public virtual void OnSeeTargetPoint()
 	{
-		IsEnable = false;
 	}
 
-	public void Resume()
+	public virtual void OnReachTargetPoint()
 	{
-		IsEnable = true;
 	}
-	
+
+	public virtual void OnSeeEnemy(Person enemy)
+	{
+	}
+
+	public virtual void OnTakeShot(Person attacker)
+	{
+	}
+
+	public virtual void OnHearShot(Person attacker)
+	{
+	}
+
+	public virtual void OnEnterBuilding(Building building)
+	{
+	}
+
+	public virtual void OnHealStateChanged(bool isHealing)
+	{
+	}
+
+	public virtual void OnHealthStateChanged()
+	{
+	}
+
+	public abstract void Unsubscribe();
+
 	private void Subscribe()
 	{
-		_owner.TookShot += OwnerOnTookShot;
-		_owner.Senses.ReceivedSound += SensesOnReceivedSound;
-		_owner.EnteredBuilding += OwnerOnEnteredBuilding;
-		_owner.Health.HealStateChanged += HealthOnHealStateChanged;
-		_owner.Health.StateChanged += HealthStateChanged;
+		Owner.TookShot += OnTakeShot;
+		Owner.Senses.ReceivedSound += OnHearShot;
+		Owner.EnteredBuilding += OnEnterBuilding;
+		Owner.Health.HealStateChanged += OnHealStateChanged;
+		Owner.Health.StateChanged += OnHealthStateChanged;
 	}
 
 	public void Dispose()
 	{
-		_owner.TookShot -= OwnerOnTookShot;
-		_owner.Senses.ReceivedSound -= SensesOnReceivedSound;
-		_owner.EnteredBuilding -= OwnerOnEnteredBuilding;
-		_owner.Health.HealStateChanged -= HealthOnHealStateChanged;
-		_owner.Health.StateChanged -= HealthStateChanged;
+		Owner.TookShot -= OnTakeShot;
+		Owner.Senses.ReceivedSound -= OnHearShot;
+		Owner.EnteredBuilding -= OnEnterBuilding;
+		Owner.Health.HealStateChanged -= OnHealStateChanged;
+		Owner.Health.StateChanged += OnHealthStateChanged;
+		Unsubscribe();
 	}
 
 	public void Update()
 	{
-		if (_events.OnSeeTargetPoint != null)
+		if (Owner.Senses.CanSeePoint(TargetPoint))
 		{
-			if (_owner.Senses.CanSeePoint(_targetPoint))
+			OnSeeTargetPoint();
+		}
+		
+		if (Vector3.Distance(Owner.transform.position, TargetPoint) < 1f)
+		{
+			OnReachTargetPoint();
+		}
+		
+		var allEnemies = Owner.AllOtherPeople.Where(item => item.IsAlive && item.Team != Owner.Team);
+		var finePeople = allEnemies.Where(item => item.Health.NormalizedValue >= 0.5f);
+		foreach (var person in finePeople)
+		{
+			if (Owner.Senses.CanSeePerson(person))
 			{
-				_events.OnSeeTargetPoint?.Invoke();
+				OnSeeEnemy(person);
 				return;
-			}	
+			}
 		}
 
-		if (_events.OnReachTargetPoint != null)
+		var injuredPeople = allEnemies.Where(item => item.Health.NormalizedValue < 0.5f);
+		foreach (var person in injuredPeople)
 		{
-			if (Vector3.Distance(_owner.transform.position, _targetPoint) < 1f)
+			if (Owner.Senses.CanSeePerson(person))
 			{
-				_events.OnReachTargetPoint?.Invoke();
+				OnSeeEnemy(person);
 				return;
 			}
 		}
-		
-		if (_events.OnSeeEnemy != null)
-		{
-			var allEnemies = _owner.AllOtherPeople.Where(item => item.IsAlive && item.TeamID != _owner.TeamID);
-			var finePeople = allEnemies.Where(item => item.Health.NormalizedValue >= 0.5f);
-			foreach (var person in finePeople)
-			{
-				if (_owner.Senses.CanSeePerson(person))
-				{
-					_events.OnSeeEnemy?.Invoke(person);
-					return;
-				}
-			}
-		
-			var injuredPeople = allEnemies.Where(item => item.Health.NormalizedValue < 0.5f);
-			foreach (var person in injuredPeople)
-			{
-				if (_owner.Senses.CanSeePerson(person))
-				{
-					_events.OnSeeEnemy?.Invoke(person);
-					return;
-				}
-			}
-		}
-	}
-
-	private void HealthOnHealStateChanged(bool isHealing)
-	{
-		_events.OnHealStateChanged?.Invoke(isHealing);
-	}
-
-	private void OwnerOnEnteredBuilding(Building building)
-	{
-		_events.OnEnterBuilding?.Invoke(building);
-	}
-
-	private void SensesOnReceivedSound(Person source)
-	{
-		if (source.TeamID == _owner.TeamID)
-		{
-			return;
-		}
-		
-		_events.OnHearShot?.Invoke(source);
-	}
-
-	private void OwnerOnTookShot(Person attacker)
-	{
-		_events.OnTakeShot?.Invoke(attacker);
-	}
-
-	private void HealthStateChanged()
-	{
-		
 	}
 }

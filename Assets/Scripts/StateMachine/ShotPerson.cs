@@ -13,7 +13,6 @@ public class ShotPerson : PersonState
 	
 	public override async void Enter()
 	{
-		_target.Health.StateChanged += TargetHealthStateChanged;
 		Owner.Animator.SetBool("Aim", true);
 
 		await Owner.RotateTo(_target.transform, 0.1f);
@@ -21,6 +20,15 @@ public class ShotPerson : PersonState
 
 		while (_target.IsAlive && !CancellationToken.IsCancellationRequested)
 		{
+			if (Owner.Gun == null)
+			{
+				if (!await Owner.TakeWeapon())
+				{
+					Owner.StateMachine.SwitchToState(new IdleState());
+					return;
+				}
+			}
+			
 			if (Owner.Gun.NeedReload())
 			{
 				Owner.Animator.SetTrigger("Reload");
@@ -49,30 +57,11 @@ public class ShotPerson : PersonState
 			GlobalSounds.Sound?.Invoke(Owner);
 			if (willHit)
 			{
-				_target.TakeShot(Owner);
+				_target.TakeShot(Owner, Owner.Gun.Damage);
 			}
-			await Delay(Random.Range(0.3f, 0.4f));
+			await Delay( Owner.Gun.ShotDelay * Random.Range(1f, 1.1f));
 		}
-
-		if (!_target.IsAlive)
-		{
-			Owner.Animator.SetBool("Aim", false);
-		}
-		
 		Complete();
-	}
-
-	public override void Exit()
-	{
-		_target.Health.StateChanged -= TargetHealthStateChanged;
-	}
-
-	private void TargetHealthStateChanged()
-	{
-		if (_target.Health.NormalizedValue < 0.5f)
-		{
-			Complete();
-		}
 	}
 
 	public override void Update()
@@ -81,5 +70,10 @@ public class ShotPerson : PersonState
 		{
 			Owner.transform.rotation = Quaternion.LookRotation(_target.transform.position - Owner.transform.position);
 		}
+	}
+
+	public override void Exit()
+	{
+		
 	}
 }

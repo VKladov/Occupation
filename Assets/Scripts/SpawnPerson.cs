@@ -9,6 +9,9 @@ public class SpawnPerson : ITickable
 	
 	[Inject] private ClickPicker _clickPicker;
 	[Inject] private Person.Factory _factory;
+	[Inject(Id = Team.RussianArmy)] private TeamSkinPreset _russianSkinPreset;
+	[Inject(Id = Team.UkranianArmy)] private TeamSkinPreset _ukrainianSkinPreset;
+	[Inject(Id = Team.Citizen)] private TeamSkinPreset _cityzenSkinPreset;
 	
 	public List<Person> People = new List<Person>();
 
@@ -16,19 +19,35 @@ public class SpawnPerson : ITickable
 	{
 		if (Input.GetKeyDown(KeyCode.Q))
 		{
-			Spawn(0);
+			Spawn(_russianSkinPreset);
+		}
+		else if (Input.GetKeyDown(KeyCode.W))
+		{
+			Spawn(_cityzenSkinPreset);
 		}
 		else if (Input.GetKeyDown(KeyCode.E))
 		{
-			Spawn(1);
+			Spawn(_ukrainianSkinPreset);
 		}
 	}
 
-	private void Spawn(int teamID)
+	private void Spawn(TeamSkinPreset team)
 	{
 		var person = _factory.Create();
 		person.transform.position = _clickPicker.CheckClick().GroundPoint;
-		person.SetTeam(teamID);
+		person.SkinGenerator.Setup(team);
+		person.SetTeam(team);
+		
+		if (team.Rifle != null)
+		{
+			person.AddWeapon(team.Rifle);
+		}
+
+		if (team.Handgun)
+		{
+			person.AddWeapon(team.Handgun);
+		}
+		
 		person.Died += PersonOnDied;
 		People.Add(person);
 	}

@@ -3,14 +3,14 @@ using UnityEngine;
 using UnityEngine.AI;
 using Zenject;
 
-public class PersonMovement : IInitializable, IDisposable
+public class PersonMovement : IDisposable
 {
 	[Inject]
 	private NavMeshAgent _navMeshAgent;
 
 	public Vector3 NavAgentVelocity => _navMeshAgent.velocity;
 
-	public void Initialize()
+	public void Enable()
 	{
 		_navMeshAgent.enabled = true;
 	}

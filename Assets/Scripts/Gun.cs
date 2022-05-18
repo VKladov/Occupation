@@ -1,12 +1,23 @@
 using System;
 using UnityEngine;
+using Zenject;
 
 public class Gun : MonoBehaviour
 {
+	public class Factory : PlaceholderFactory<GameObject, Gun>
+	{
+	}
+
+	public float ShotDelay => _shotDelay;
+	public float Damage => _damage;
+	public WeaponType Type => _type; 
+	
 	[SerializeField] private int _magCapacity;
 	[SerializeField] private Transform _barrel;
-	[SerializeField] private ParticleSystem _shotEffect;
-	[SerializeField] private Transform _trailEffect;
+	[SerializeField] private WeaponType _type;
+	[SerializeField] private float _shotDelay;
+	[SerializeField] private float _damage;
+	[Inject] private VisualEffects _visualEffects;
 
 	private int _bullets;
 
@@ -23,10 +34,9 @@ public class Gun : MonoBehaviour
 		{
 			return false;
 		}
-
+		
+		_visualEffects.Shot(_barrel.position, target - _barrel.position);
 		_bullets -= 1;
-		_trailEffect.transform.rotation = Quaternion.LookRotation(target - _trailEffect.transform.position);
-		_shotEffect.Play();
 		return true;
 	}
 

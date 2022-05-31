@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.AI;
 using Zenject;
+using Random = UnityEngine.Random;
 
 public class PersonMovement : IDisposable
 {
@@ -10,15 +11,23 @@ public class PersonMovement : IDisposable
 
 	public Vector3 NavAgentVelocity => _navMeshAgent.velocity;
 
+	public int AreaMask
+	{
+		set => _navMeshAgent.areaMask = value;
+	}
+
 	public void Enable()
 	{
 		_navMeshAgent.enabled = true;
+		_navMeshAgent.avoidancePriority = Random.Range(0, 50);
 	}
 
-	public void Dispose()
+	public void Disable()
 	{
 		_navMeshAgent.enabled = false;
 	}
+
+	public void Dispose() => Disable();
 
 	public float MaxSpeed
 	{

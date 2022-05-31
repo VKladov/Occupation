@@ -9,8 +9,8 @@ public class PersonSenses : IDisposable, IInitializable
 	[Inject]
 	private readonly Person _owner;
 	
-	[Inject(Id = ID.ObstaclesLayer)]
-	private LayerMask _wallsLayerMask;
+	[Inject]
+	private readonly Constants _constants;
 	
 	private const float FieldOfView = 100f;
 	public void Initialize()
@@ -41,6 +41,6 @@ public class PersonSenses : IDisposable, IInitializable
 			return false;
 		}
 
-		return !Physics.Linecast(_owner.transform.position + Vector3.up, point + Vector3.up, _wallsLayerMask);
+		return !Physics.Linecast(_owner.transform.position + Vector3.up, point + Vector3.up, _constants.LayerMasks.ObstaclesLayer);
 	}
 }

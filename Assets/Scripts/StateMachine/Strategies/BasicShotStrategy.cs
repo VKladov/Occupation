@@ -7,7 +7,7 @@ public class BasicShotStrategy : PersonStrategy
 	private Person _target;
 	private CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 	private bool HasTarget => _target != null && _target.IsAlive && Owner.Senses.CanSeePerson(_target);
-	public BasicShotStrategy(Person owner, Vector3 targetPoint) : base(owner, targetPoint)
+	public BasicShotStrategy(Person owner) : base(owner)
 	{
 		
 	}

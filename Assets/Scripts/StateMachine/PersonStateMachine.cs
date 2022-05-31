@@ -7,10 +7,9 @@ public class PersonStateMachine : IDisposable
 	private PersonState _state;
 	private readonly Person _person;
 	
-	public PersonStateMachine(Person person, PersonStrategy strategy)
+	public PersonStateMachine(Person person)
 	{
 		_person = person;
-		_strategy = strategy;
 	}
 
 	public void Update()
@@ -37,16 +36,12 @@ public class PersonStateMachine : IDisposable
 		_state.Enter(_person, OnStateComplete);
 	}
 
-	public void SetObjective(Vector3 objective)
-	{
-		_strategy?.SetTargetPoint(objective);
-	}
-
 	public void ChangeStrategy(PersonStrategy strategy)
 	{
 		_state?.Stop();
 		_strategy?.Dispose();
 		_strategy = strategy;
+		_strategy?.Start();
 	}
 
 	private void OnStateComplete()

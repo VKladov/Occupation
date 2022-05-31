@@ -1,5 +1,7 @@
+using Buildings;
 using DefaultNamespace;
 using UnityEngine;
+using UnityEngine.AI;
 using Zenject;
 
 public class MainInstaller : MonoInstaller
@@ -19,15 +21,15 @@ public class MainInstaller : MonoInstaller
     [Header("Effects")]
     [SerializeField] private VisualEffect _shotPrefab;
     [SerializeField] private VisualEffect _bloodShotPrefab;
+
+    [Header("NavMeshAgents")] 
+    [SerializeField] private NavMeshAgent _footpath;
+    [SerializeField] private NavMeshAgent _everywhere;
+    [SerializeField] private NavMeshAgent _road;
     
     public override void InstallBindings()
     {
-        // LayerMasks
-        Container.Bind<LayerMask>().WithId(ID.PersonLayer).FromInstance(_personLayerMask).CopyIntoAllSubContainers();
-        Container.Bind<LayerMask>().WithId(ID.GroundLayer).FromInstance(_groundLayerMask).CopyIntoAllSubContainers();
-        Container.Bind<LayerMask>().WithId(ID.BuildingLayer).FromInstance(_buildingLayerMask).CopyIntoAllSubContainers();
-        Container.Bind<LayerMask>().WithId(ID.ObstaclesLayer).FromInstance(_obstaclesLayerMask).CopyIntoAllSubContainers();
-
+        Container.Bind<Constants>().FromMethod(CreateConstantsInstance).AsSingle();
         Container.Bind<Camera>().FromComponentInHierarchy().AsSingle();
         Container.BindInterfacesAndSelfTo<ClickPicker>().AsSingle();
         Container.BindInterfacesAndSelfTo<SpawnPerson>().AsSingle();
@@ -37,6 +39,9 @@ public class MainInstaller : MonoInstaller
         Container.BindInterfacesAndSelfTo<PersonSelection>().AsSingle();
         Container.Bind<SelectedPersonHighlight>().AsSingle().NonLazy();
         Container.BindFactory<Person, Person.Factory>().FromSubContainerResolve().ByNewContextPrefab(_personPrefab);
+        Container.Bind<City>().AsSingle();
+        Container.Bind<House>().FromComponentsInHierarchy().AsSingle();
+        Container.Bind<Supermarket>().FromComponentsInHierarchy().AsSingle();
 
         Container.Bind<VisualEffects>().AsSingle();
         Container.BindMemoryPool<VisualEffect, VisualEffect.Pool>().WithId(ID.ShotEffectPool).FromComponentInNewPrefab(_shotPrefab);
@@ -44,5 +49,13 @@ public class MainInstaller : MonoInstaller
         Container.Bind<TeamSkinPreset>().WithId(Team.RussianArmy).FromInstance(_russianArmy);
         Container.Bind<TeamSkinPreset>().WithId(Team.UkranianArmy).FromInstance(_ukranianArmy);
         Container.Bind<TeamSkinPreset>().WithId(Team.Citizen).FromInstance(_citizen);
+    }
+
+    private Constants CreateConstantsInstance()
+    {
+        return new Constants(
+            new Constants.LayerMasksData(_personLayerMask, _groundLayerMask, _buildingLayerMask, _obstaclesLayerMask),
+            new Constants.NavMeshAreaMasksData(_footpath.areaMask, _road.areaMask, _everywhere.areaMask)
+        );
     }
 }

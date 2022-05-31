@@ -9,6 +9,7 @@ public class SpawnPerson : ITickable
 	
 	[Inject] private ClickPicker _clickPicker;
 	[Inject] private Person.Factory _factory;
+	[Inject] private Constants _constants;
 	[Inject(Id = Team.RussianArmy)] private TeamSkinPreset _russianSkinPreset;
 	[Inject(Id = Team.UkranianArmy)] private TeamSkinPreset _ukrainianSkinPreset;
 	[Inject(Id = Team.Citizen)] private TeamSkinPreset _cityzenSkinPreset;
@@ -19,22 +20,31 @@ public class SpawnPerson : ITickable
 	{
 		if (Input.GetKeyDown(KeyCode.Q))
 		{
-			Spawn(_russianSkinPreset);
+			var person = Spawn(_russianSkinPreset, _clickPicker.CheckClick().GroundPoint);
+			person.Movement.AreaMask = _constants.NavMeshAreaMasks.Everywhere;
+			person.Movement.Enable();
+			person.StateMachine.ChangeStrategy(new BasicShotStrategy(person));
 		}
 		else if (Input.GetKeyDown(KeyCode.W))
 		{
-			Spawn(_cityzenSkinPreset);
+			var person = Spawn(_cityzenSkinPreset, _clickPicker.CheckClick().GroundPoint);
+			person.Movement.AreaMask = _constants.NavMeshAreaMasks.Footpath;
+			person.Movement.Enable();
+			person.StateMachine.ChangeStrategy(new HomeShopLoop(person));
 		}
 		else if (Input.GetKeyDown(KeyCode.E))
 		{
-			Spawn(_ukrainianSkinPreset);
+			var person = Spawn(_ukrainianSkinPreset, _clickPicker.CheckClick().GroundPoint);
+			person.Movement.AreaMask = _constants.NavMeshAreaMasks.Everywhere;
+			person.Movement.Enable();
+			person.StateMachine.ChangeStrategy(new BasicShotStrategy(person));
 		}
 	}
 
-	private void Spawn(TeamSkinPreset team)
+	public Person Spawn(TeamSkinPreset team, Vector3 position)
 	{
 		var person = _factory.Create();
-		person.transform.position = _clickPicker.CheckClick().GroundPoint;
+		person.transform.position = position;
 		person.SkinGenerator.Setup(team);
 		person.SetTeam(team);
 		
@@ -50,6 +60,7 @@ public class SpawnPerson : ITickable
 		
 		person.Died += PersonOnDied;
 		People.Add(person);
+		return person;
 	}
 
 	private void PersonOnDied(Person person)

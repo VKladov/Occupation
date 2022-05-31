@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Buildings;
 using Cysharp.Threading.Tasks;
 using ModestTree;
 using UnityEngine;
@@ -17,6 +18,7 @@ public class Person : MonoBehaviour
 	public event Action<Person> Died;
 	public event Action<Person> TookShot;
 	public event Action<Building> EnteredBuilding;
+	public event Action TargetChanged;
 
 	public string Name { get; private set; }
 	public TeamSkinPreset Team { get; private set; }
@@ -29,6 +31,7 @@ public class Person : MonoBehaviour
 	[Inject] public readonly PersonHealth Health;
 	[Inject] public readonly Storage Storage;
 	[Inject] public readonly SkinGenerator SkinGenerator;
+	[Inject] public readonly City City;
 	[Inject] private VisualEffects _visualEffects;
 	[Inject] private readonly List<WeaponSlot> _weaponSlots;
 	[Inject] private readonly Gun.Factory _gunFactory;
@@ -42,22 +45,43 @@ public class Person : MonoBehaviour
 	public Person[] AllOtherPeople => FindObjectsOfType<Person>().Where(item => item.transform.root != transform.root).ToArray();
 	
 	private Outline[] _outlines;
-	public Vector3 MainTarget { get; private set; }
-	public bool HasMainTarget { get; set; }
+	public Objective MainTarget { get; private set; }
+	public bool HasMainTarget => MainTarget != null;
 	public PersonMovementState MovementState { get; private set; }
 	public Hospital Hospital => FindObjectOfType<Hospital>();
 	public RestPoint RestPoint => FindObjectOfType<RestPoint>();
+	public Building House;
+
+	private Building _currentBuilding;
+
+	public void EnterBuilding(Building building)
+	{
+		_currentBuilding = building;
+		transform.position = building.transform.position;
+		Movement.Disable();
+	}
+
+	public void ExitBuilding()
+	{
+		if (_currentBuilding == null)
+		{
+			return;
+		}
+
+		transform.position = _currentBuilding.Enter;
+		Movement.Enable();
+		_currentBuilding = null;
+	}
 
 	public void HandleBuildingEnter(Building building)
 	{
 		EnteredBuilding?.Invoke(building);
 	}
 
-	public void SetMainObjective(Vector3 targetPosition)
+	public void SetMainObjective(Objective target)
 	{
-		MainTarget = targetPosition;
-		HasMainTarget = true;
-		StateMachine?.SetObjective(targetPosition);
+		MainTarget = target;
+		TargetChanged?.Invoke();
 	}
 
 	public void SetMovementState(PersonMovementState state)
@@ -128,6 +152,8 @@ public class Person : MonoBehaviour
 	private void Awake()
 	{
 		Name = NameGenerator.GenerateUniqName();
+		StateMachine = new PersonStateMachine(this);
+		SetMovementState(PersonMovementState.Stand);
 	}
 
 	private void OnEnable()
@@ -153,14 +179,6 @@ public class Person : MonoBehaviour
 		Movement.Dispose();
 		Died?.Invoke(this);
 		enabled = false;
-	}
-
-	private void Start()
-	{
-		Movement.Enable();
-		SetMainObjective(transform.position);
-		StateMachine = new PersonStateMachine(this, new BasicShotStrategy(this, MainTarget));
-		SetMovementState(PersonMovementState.Stand);
 	}
 
 	private void Update()

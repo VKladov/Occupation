@@ -1249,6 +1249,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _weaponContainer: {fileID: 8412099774348329072}
+  House: {fileID: 0}
 --- !u!65 &8412099774494504740
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1282,8 +1283,8 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 2
   m_BaseOffset: 0
-  m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
+  m_WalkableMask: 16
+  m_ObstacleAvoidanceType: 1
 --- !u!114 &8375639678129684957
 MonoBehaviour:
   m_ObjectHideFlags: 0

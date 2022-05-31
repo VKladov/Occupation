@@ -5,8 +5,11 @@ using UnityEngine;
 
 public class Building : MonoBehaviour
 {
-    public readonly Storage Storage = new Storage();
+    [SerializeField] protected Transform _enter;
     
+    public readonly Storage Storage = new Storage();
+    public Vector3 Enter => _enter.position;
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.TryGetComponent(out Person person))

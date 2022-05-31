@@ -1,25 +1,35 @@
 using System;
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 public abstract class PersonStrategy : IDisposable
 {
 	protected Person Owner;
-	protected Vector3 TargetPoint;
+	protected CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
 
-	protected PersonStrategy(Person owner, Vector3 targetPoint)
+	protected PersonStrategy(Person owner)
 	{
 		Owner = owner;
-		TargetPoint = targetPoint;
-
 		Subscribe();
-		Owner.Movement.MoveTo(targetPoint);
 	}
 
-	public void SetTargetPoint(Vector3 point)
+	protected void Cancel()
 	{
-		TargetPoint = point;
-		Owner.Movement.MoveTo(point);
+		CancellationTokenSource.Cancel();
+		CancellationTokenSource = new CancellationTokenSource();
+	}
+
+	protected UniTask<bool> Delay(float seconds)
+	{
+		return UniTask
+			.Delay(Mathf.CeilToInt(seconds * 1000f), cancellationToken: CancellationTokenSource.Token)
+			.SuppressCancellationThrow();
+	}
+
+	public virtual void Start()
+	{
 	}
 
 	public virtual void OnSeeTargetPoint()
@@ -56,6 +66,15 @@ public abstract class PersonStrategy : IDisposable
 
 	public abstract void Unsubscribe();
 
+	private void OwnerOnTargetChanged()
+	{
+		Owner.ExitBuilding();
+		if (Owner.HasMainTarget)
+		{
+			Owner.Movement.MoveTo(Owner.MainTarget.Position);
+		}
+	}
+
 	private void Subscribe()
 	{
 		Owner.TookShot += OnTakeShot;
@@ -63,6 +82,7 @@ public abstract class PersonStrategy : IDisposable
 		Owner.EnteredBuilding += OnEnterBuilding;
 		Owner.Health.HealStateChanged += OnHealStateChanged;
 		Owner.Health.StateChanged += OnHealthStateChanged;
+		Owner.TargetChanged += OwnerOnTargetChanged;
 	}
 
 	public void Dispose()
@@ -72,19 +92,27 @@ public abstract class PersonStrategy : IDisposable
 		Owner.EnteredBuilding -= OnEnterBuilding;
 		Owner.Health.HealStateChanged -= OnHealStateChanged;
 		Owner.Health.StateChanged += OnHealthStateChanged;
+		Owner.TargetChanged -= OwnerOnTargetChanged;
 		Unsubscribe();
 	}
 
 	public void Update()
 	{
-		if (Owner.Senses.CanSeePoint(TargetPoint))
+		if (Owner.HasMainTarget)
 		{
-			OnSeeTargetPoint();
-		}
+			if (Owner.Senses.CanSeePoint(Owner.MainTarget.Position))
+			{
+				OnSeeTargetPoint();
+			}
 		
-		if (Vector3.Distance(Owner.transform.position, TargetPoint) < 1f)
-		{
-			OnReachTargetPoint();
+			if (Vector3.Distance(Owner.transform.position, Owner.MainTarget.Position) < 1f)
+			{
+				if (Owner.MainTarget is BuildingObjective buildingObjective)
+				{
+					Owner.EnterBuilding(buildingObjective.Target);
+				}
+				OnReachTargetPoint();
+			}
 		}
 		
 		var allEnemies = Owner.AllOtherPeople.Where(item => item.IsAlive && item.Team != Owner.Team);

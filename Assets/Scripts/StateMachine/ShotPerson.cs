@@ -32,7 +32,11 @@ public class ShotPerson : PersonState
 			if (Owner.Gun.NeedReload())
 			{
 				Owner.Animator.SetTrigger("Reload");
-				await Delay(Random.Range(3.5f, 4f));
+				if (await Delay(Random.Range(3.5f, 4f)))
+				{
+					Complete();
+					return;
+				}
 				Owner.Gun.Reload();
 			}
 

@@ -39,6 +39,15 @@ public class SendPersonToPoint : IDisposable
 			return;
 		}
 
+		if (click.Building != null)
+		{
+			foreach (var person in _selection.Selected)
+			{
+				person.SetMainObjective(new BuildingObjective(click.Building));
+			}
+			return;
+		}
+
 		if (!_selection.Selected.Any())
 		{
 			return;
@@ -63,8 +72,7 @@ public class SendPersonToPoint : IDisposable
 
 			Debug.DrawLine(position, position + Vector3.up * 2, Color.green, 2f);
 			personWithoutPosition.Remove(closest);
-			closest.SetMainObjective(position);
-			// closest.Movement.MoveTo(position);
+			closest.SetMainObjective(new PositionObjective(position));
 		}
 	}
 

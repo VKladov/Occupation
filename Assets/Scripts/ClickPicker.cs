@@ -22,14 +22,8 @@ public class ClickPicker : ITickable
 	public event Action<Vector2> RightDragChanged;
 	public event Action<Vector2> RightDragEnded;
 
-	[Inject(Id = ID.PersonLayer)] 
-	private LayerMask _personLayer;
-	
-	[Inject(Id = ID.GroundLayer)] 
-	private LayerMask _groundLayer;
-	
-	[Inject(Id = ID.BuildingLayer)] 
-	private LayerMask _buildingLayer;
+	[Inject] 
+	private Constants _constants;
 
 	[Inject]
 	private Camera _camera;
@@ -42,19 +36,20 @@ public class ClickPicker : ITickable
 	{
 		var ray = _camera.ScreenPointToRay(Input.mousePosition);
 		Person person = null;
-		if (Physics.Raycast(ray, out var hitInfo, 1000f, _personLayer))
+		if (Physics.Raycast(ray, out var hitInfo, 1000f, _constants.LayerMasks.PersonLayer))
 		{
 			hitInfo.collider.TryGetComponent(out person);
 		}
 
 		Building building = null;
-		if (Physics.Raycast(ray, out var buildingHit, 1000f, _buildingLayer))
+		if (Physics.Raycast(ray, out var buildingHit, 1000f, _constants.LayerMasks.BuildingLayer))
 		{
+			Debug.Log("buildingHit");
 			buildingHit.collider.TryGetComponent(out building);
 		}
 
 		var groundPoint = Vector3.zero;
-		if (Physics.Raycast(ray, out var groundHit, 1000f, _groundLayer))
+		if (Physics.Raycast(ray, out var groundHit, 1000f, _constants.LayerMasks.GroundLayer))
 		{
 			groundPoint = groundHit.point;
 		}

@@ -1,9 +1,7 @@
+using Buildings;
 using UnityEngine;
 
-namespace Buildings
+public class Supermarket : Building
 {
-	public class Supermarket : House
-	{
 		
-	}
 }
